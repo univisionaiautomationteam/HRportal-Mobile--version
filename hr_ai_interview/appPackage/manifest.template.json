@@ -1,0 +1,64 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.19/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.19",
+  "version": "1.0.0",
+  "id": "${TEAMS_APP_ID}",
+  "packageName": "com.univision.hr.aiinterviewbot",
+  "developer": {
+    "name": "Univision",
+    "websiteUrl": "https://your-public-bot-host.example.com",
+    "privacyUrl": "https://your-public-bot-host.example.com/privacy",
+    "termsOfUseUrl": "https://your-public-bot-host.example.com/terms"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "UTSBOT",
+    "full": "UTSBOT AI Interview Assistant"
+  },
+  "description": {
+    "short": "AI-assisted L1 interview bot for Teams.",
+    "full": "UTSBOT joins interview flows, asks questions, accepts candidate responses, and forwards them to the AI interview service."
+  },
+  "accentColor": "#1F2937",
+  "bots": [
+    {
+      "botId": "${MICROSOFT_APP_ID}",
+      "scopes": [
+        "personal",
+        "groupchat",
+        "team"
+      ],
+      "supportsFiles": false,
+      "isNotificationOnly": false,
+      "commandLists": [
+        {
+          "scopes": [
+            "personal",
+            "groupchat",
+            "team"
+          ],
+          "commands": [
+            {
+              "title": "start-ai-interview",
+              "description": "Initialize an AI interview session"
+            },
+            {
+              "title": "next-question",
+              "description": "Fetch the next pending interview question"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": [
+    "your-public-bot-host.example.com"
+  ]
+}

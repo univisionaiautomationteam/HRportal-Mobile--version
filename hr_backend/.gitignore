@@ -1,0 +1,26 @@
+# dependencies
+/node_modules
+
+# environment variables
+.env
+
+# logs
+logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# build folders (if any later)
+/dist
+/build
+
+# pm2 logs
+.pnpm-store
+/uploads
+
+documentai-key.json
+*.json
+.env
