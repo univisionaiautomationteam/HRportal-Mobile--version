@@ -289,9 +289,6 @@ export const DashboardScreen = ({ navigation }: any) => {
             <DonutChart total={dashboard.applicationTotal} items={dashboard.applicationOverview} />
           </View>
         </Card>
-        <View style={{ height: 300, backgroundColor: 'red' }}>
-          <Text>SCROLL TEST</Text>
-        </View>
 
         <Card title="Calendar Schedule">
           <UpcomingInterviews items={dashboard.upcomingInterviews} onViewAll={() => navigation.navigate('AI')} />

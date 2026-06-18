@@ -1,6 +1,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { SIZES, TYPOGRAPHY } from '../constants/theme';
@@ -129,6 +130,7 @@ const JobNavigator = () => {
 /* Primary Application Bottom Tabs */
 const TabNavigator = () => {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
@@ -136,8 +138,8 @@ const TabNavigator = () => {
         tabBarStyle: {
           backgroundColor: theme.surface,
           borderTopColor: theme.border,
-          height: 60,
-          paddingBottom: 8,
+          minHeight: 70 + Math.max(insets.bottom, 10), // Ensures enough height for icons + safe area
+          paddingBottom: Math.max(insets.bottom, 10),  // Always have at least 10px padding
           paddingTop: 8,
         },
         tabBarActiveTintColor: theme.primary,
