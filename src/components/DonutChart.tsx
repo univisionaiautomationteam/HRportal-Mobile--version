@@ -29,6 +29,8 @@ export const DonutChart: React.FC<DonutChartProps> = ({ total, items }) => {
   const chartItems = items.length ? items : fallback;
 
   let cumulativePercent = 0;
+  console.log("DonutChart Loaded");
+console.log(items);
 
   return (
     <View style={styles.container}>

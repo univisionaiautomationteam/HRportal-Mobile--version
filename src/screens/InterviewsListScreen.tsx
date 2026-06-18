@@ -83,11 +83,6 @@ export const InterviewsListScreen = ({ navigation }: any) => {
       if (interRes.status === 'fulfilled') setInterviewers(interRes.value.data || []);
       if (jobsRes.status === 'fulfilled') setJobs(jobsRes.value.data || []);
 
-      // 3 Prefilled data fallback if everything empty
-      if (candRes.status === 'fulfilled' && !candRes.value.data?.length) {
-        setCandidates(getMockCandidates());
-        setInterviews(getMockInterviews());
-      }
     } catch (err) {
       console.error('Data load error:', err);
     } finally {
@@ -582,20 +577,6 @@ export const InterviewsListScreen = ({ navigation }: any) => {
     </SafeAreaView>
   );
 };
-
-function getMockCandidates() {
-  return [
-    { id: '101', first_name: 'Amit', last_name: 'Sharma', position: 'Node.js Developer', status: 'l1_scheduled', email_id: 'amit@gmail.com' },
-    { id: '102', first_name: 'Neha', last_name: 'Patel', position: 'React Native Expert', status: 'col_issued', email_id: 'neha@gmail.com' },
-    { id: '103', first_name: 'Varun', last_name: 'Kumar', position: 'Solutions Architect', status: 'joined', email_id: 'varun@gmail.com' },
-  ];
-}
-
-function getMockInterviews() {
-  return [
-    { id: 'i1', candidate_name: 'Amit Sharma', candidate_email: 'amit@gmail.com', interviewer_name: 'Amitabh Dev', interview_type: 'Technical', scheduled_date: new Date().toISOString(), status: 'Scheduled', meeting_link: 'https://teams.microsoft.com/l/meetup-join/...' },
-  ];
-}
 
 const styles = StyleSheet.create({
   container: {

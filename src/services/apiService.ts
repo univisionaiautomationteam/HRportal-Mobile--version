@@ -141,6 +141,11 @@ export const profileAPI = {
   getProfile: () => apiClient.get('/profile/me'),
 };
 
+/* ================= CHATBOT API ================= */
+export const chatbotAPI = {
+  query: (query: string) => apiClient.post('/chatbot', { query }),
+};
+
 /* ================= JOBS API ================= */
 export const jobsAPI = {
   getAll: () => apiClient.get('/jobs'),

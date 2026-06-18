@@ -95,6 +95,7 @@ const GlobalChatbot = () => {
       <TouchableOpacity
         onPress={() => setIsOpen(true)}
         style={[styles.floatingButton, { backgroundColor: theme.primary }]}
+        activeOpacity={0.8}
       >
         <MessageCircle color="white" size={30} />
       </TouchableOpacity>
@@ -102,73 +103,91 @@ const GlobalChatbot = () => {
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={styles.overlay}
-      pointerEvents="box-none"
-    >
-      <View style={[styles.chatWindow, { backgroundColor: "#0f172a" }]}>
-        {/* HEADER */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>HR Assistant</Text>
-          <View style={styles.headerActions}>
-            <TouchableOpacity onPress={clearChat} style={styles.iconBtn}>
-              <Trash2 color="white" size={20} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setIsOpen(false)} style={styles.iconBtn}>
-              <X color="white" size={20} />
+    <View style={styles.overlay} pointerEvents="box-none">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={styles.avoidingView}
+        pointerEvents="box-none"
+      >
+        <View style={[styles.chatWindow, { backgroundColor: "#0f172a" }]} pointerEvents="auto">
+          {/* HEADER */}
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>HR Assistant</Text>
+            <View style={styles.headerActions}>
+              <TouchableOpacity onPress={clearChat} style={styles.iconBtn}>
+                <Trash2 color="white" size={20} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setIsOpen(false)} style={styles.iconBtn}>
+                <X color="white" size={20} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* RESPONSE AREA */}
+          <ScrollView
+            ref={scrollViewRef}
+            style={styles.messagesContainer}
+            contentContainerStyle={styles.messagesContent}
+          >
+            {messages.map((msg, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.messageBubble,
+                  msg.sender === "user" ? styles.userBubble : styles.botBubble,
+                  { backgroundColor: msg.sender === "user" ? theme.primary : "#334155" }
+                ]}
+              >
+                <Text style={styles.messageText}>{msg.text}</Text>
+              </View>
+            ))}
+            {loading && (
+              <View style={[styles.messageBubble, styles.botBubble, { backgroundColor: "#334155" }]}>
+                <ActivityIndicator color="white" size="small" />
+              </View>
+            )}
+          </ScrollView>
+
+          {/* INPUT AREA */}
+          <View style={styles.inputArea}>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter name or ID..."
+              placeholderTextColor="#94a3b8"
+              value={message}
+              onChangeText={setMessage}
+              multiline={false}
+            />
+            <TouchableOpacity onPress={sendMessage} style={[styles.sendBtn, { backgroundColor: theme.primary }]}>
+              <Send color="white" size={20} />
             </TouchableOpacity>
           </View>
         </View>
-
-        {/* RESPONSE AREA */}
-        <ScrollView
-          ref={scrollViewRef}
-          style={styles.messagesContainer}
-          contentContainerStyle={styles.messagesContent}
-        >
-          {messages.map((msg, index) => (
-            <View
-              key={index}
-              style={[
-                styles.messageBubble,
-                msg.sender === "user" ? styles.userBubble : styles.botBubble,
-                { backgroundColor: msg.sender === "user" ? theme.primary : "#334155" }
-              ]}
-            >
-              <Text style={styles.messageText}>{msg.text}</Text>
-            </View>
-          ))}
-          {loading && (
-            <View style={[styles.messageBubble, styles.botBubble, { backgroundColor: "#334155" }]}>
-              <ActivityIndicator color="white" size="small" />
-            </View>
-          )}
-        </ScrollView>
-
-        {/* INPUT AREA */}
-        <View style={styles.inputArea}>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter name or ID..."
-            placeholderTextColor="#94a3b8"
-            value={message}
-            onChangeText={setMessage}
-            multiline={false}
-          />
-          <TouchableOpacity onPress={sendMessage} style={[styles.sendBtn, { backgroundColor: theme.primary }]}>
-            <Send color="white" size={20} />
-          </TouchableOpacity>
-        </View>
-      </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 10000,
+    justifyContent: "flex-end",
+    alignItems: "flex-end",
+  },
+  avoidingView: {
+    width: '100%',
+    height: '100%',
+    justifyContent: "flex-end",
+    alignItems: "flex-end",
+  },
   floatingButton: {
     position: "absolute",
-    bottom: 20,
+    bottom: 100,
     right: 20,
     width: 60,
     height: 60,
@@ -180,23 +199,13 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-    zIndex: 9999,
-  },
-  overlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 10000,
-    justifyContent: "flex-end",
-    alignItems: "flex-end",
+    zIndex: 10001, // Ensure it stays on top
   },
   chatWindow: {
     width: width * 0.85,
     height: height * 0.5,
     marginRight: 20,
-    marginBottom: 90,
+    marginBottom: 170,
     borderRadius: 16,
     elevation: 10,
     shadowColor: "#000",

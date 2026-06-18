@@ -102,17 +102,8 @@ export const AdminUserScreen = ({ navigation }: any) => {
       resetForm();
       loadUsers();
     } catch (err) {
-      // Mock fallback for sandbox ease of testing
-      const mockId = editingId || Math.random().toString();
-      const updatedUser = { id: mockId, name, email, role };
-      
-      if (editingId) {
-        setUsers(users.map((u) => (u.id === editingId ? updatedUser : u)));
-      } else {
-        setUsers([...users, updatedUser]);
-      }
-      Alert.alert('Sandbox Success', 'User configuration updated locally.');
-      resetForm();
+      console.error('Failed to save user:', err);
+      Alert.alert('Error', 'Could not save user changes to the server.');
     } finally {
       setFormLoading(false);
     }
@@ -136,8 +127,8 @@ export const AdminUserScreen = ({ navigation }: any) => {
             await adminAPI.deleteUser(id);
             loadUsers();
           } catch (err) {
-            setUsers(users.filter((u) => u.id !== id));
-            Alert.alert('Sandbox Success', 'User removed locally.');
+            console.error('Failed to delete user:', err);
+            Alert.alert('Error', 'Could not delete user from server.');
           }
         }
       }

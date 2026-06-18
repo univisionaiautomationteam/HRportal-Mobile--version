@@ -8,7 +8,7 @@ import {
   Home, 
   Users, 
   Briefcase, 
-  Calendar, 
+  Bot,
   Sparkles, 
   FileText, 
   User as UserIcon,
@@ -26,15 +26,12 @@ import CandidateDetailScreen from '../screens/CandidateDetailScreen';
 import JobsScreen from '../screens/JobsScreen';
 import CreateJobScreen from '../screens/CreateJobScreen';
 import JobDetailScreen from '../screens/JobDetailScreen';
-import InterviewsListScreen from '../screens/InterviewsListScreen';
-import InterviewMonitoringScreen from '../screens/InterviewMonitoringScreen';
-import InterviewDetailsScreen from '../screens/InterviewDetailsScreen';
-import InterviewReportScreen from '../screens/InterviewReportScreen';
 import OffersListScreen from '../screens/OffersListScreen';
 import AIAssistantScreen from '../screens/AIAssistantScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import StartInterviewScreen from '../screens/StartInterviewScreen';
 import CandidateInterviewScreen from '../screens/CandidateInterviewScreen';
+import GlobalChatbot from '../components/GlobalChatbot';
 
 /* Types for Stacks */
 export type AuthStackParamList = {
@@ -58,18 +55,10 @@ export type JobStackParamList = {
   JobDetail: { position: string };
 };
 
-export type InterviewStackParamList = {
-  InterviewsList: undefined;
-  InterviewMonitoring: undefined;
-  InterviewDetails: { sessionId: string };
-  InterviewReport: { sessionId: string };
-};
-
 export type AppTabParamList = {
   Dashboard: undefined;
   CandidatesTab: undefined;
   JobsTab: undefined;
-  InterviewsTab: undefined;
   AI: undefined;
   Offers: undefined;
   Profile: undefined;
@@ -78,7 +67,6 @@ export type AppTabParamList = {
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const CandidateStack = createNativeStackNavigator<CandidateStackParamList>();
 const JobStack = createNativeStackNavigator<JobStackParamList>();
-const InterviewStack = createNativeStackNavigator<InterviewStackParamList>();
 const Tab = createBottomTabNavigator<AppTabParamList>();
 
 /* Candidate Navigator Stack */
@@ -135,42 +123,6 @@ const JobNavigator = () => {
         options={{ title: 'Job Insights' }}
       />
     </JobStack.Navigator>
-  );
-};
-
-/* Interview Navigator Stack */
-const InterviewNavigator = () => {
-  const { theme } = useTheme();
-  return (
-    <InterviewStack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: theme.surface },
-        headerTintColor: theme.text,
-        headerTitleStyle: { fontWeight: '600' },
-        headerShadowVisible: false,
-      }}
-    >
-      <InterviewStack.Screen
-        name="InterviewsList"
-        component={InterviewsListScreen}
-        options={{ title: 'Interviews' }}
-      />
-      <InterviewStack.Screen
-        name="InterviewMonitoring"
-        component={InterviewMonitoringScreen}
-        options={{ title: 'Live Monitoring' }}
-      />
-      <InterviewStack.Screen
-        name="InterviewDetails"
-        component={InterviewDetailsScreen}
-        options={{ title: 'Session Details' }}
-      />
-      <InterviewStack.Screen
-        name="InterviewReport"
-        component={InterviewReportScreen}
-        options={{ title: 'Assessment Report' }}
-      />
-    </InterviewStack.Navigator>
   );
 };
 
@@ -234,20 +186,11 @@ const TabNavigator = () => {
         }}
       />
       <Tab.Screen
-        name="InterviewsTab"
-        component={InterviewNavigator}
-        options={{
-          title: 'Interviews',
-          headerShown: false,
-          tabBarIcon: ({ color, size }) => <Calendar color={color} size={size} />,
-        }}
-      />
-      <Tab.Screen
         name="AI"
         component={AIAssistantScreen}
         options={{
-          title: 'AI Spark',
-          tabBarIcon: ({ color, size }) => <Sparkles color={color} size={size} />,
+          title: 'AI',
+          tabBarIcon: ({ color, size }) => <Bot color={color} size={size} />,
         }}
       />
       <Tab.Screen
@@ -270,19 +213,25 @@ const TabNavigator = () => {
   );
 };
 
+const AuthenticatedWrapper = () => (
+  <>
+    <TabNavigator />
+    <GlobalChatbot />
+  </>
+);
+
 /* Core Entry Navigator resolving based on auth state */
 export const AppNavigator = () => {
   const { isAuthenticated, isLoading } = useAuth();
-  const { theme } = useTheme();
 
   if (isLoading) {
-    return null; // A custom splash spinner is handled in App.tsx
+    return null;
   }
 
   return (
     <AuthStack.Navigator screenOptions={{ headerShown: false }}>
       {isAuthenticated ? (
-        <AuthStack.Screen name="AppTabs" component={TabNavigator} />
+        <AuthStack.Screen name="AppTabs" component={AuthenticatedWrapper} />
       ) : (
         <>
           <AuthStack.Screen name="Login" component={LoginScreen} />

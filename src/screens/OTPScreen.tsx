@@ -35,13 +35,6 @@ export const OTPScreen = ({ route, navigation }: any) => {
     } catch (err: any) {
       console.error(err);
       setError(err?.response?.data?.message || 'Invalid OTP code. Please check and try again.');
-      
-      // Sandbox fallback logic for offline validation
-      if (!userId || userId === 'pending_mock') {
-        setTimeout(async () => {
-          await login('offline_jwt_token', { name: 'Demo Admin User', email: 'admin@univision.com', role: 'HR Manager' });
-        }, 1000);
-      }
     } finally {
       setLoading(false);
     }

@@ -46,8 +46,6 @@ export const JobDetailScreen = ({ route, navigation }: any) => {
       setCandidates(filtered);
     } catch (err) {
       console.error('Failed to fetch candidates:', err);
-      // Mock fallback
-      setCandidates(getMockCandidatesForPosition(decodedPosition));
     } finally {
       setLoading(false);
     }
@@ -213,13 +211,6 @@ const getStatusStyle = (status: string) => {
     default: return { backgroundColor: '#F3F4F6', color: '#6B7280' };
   }
 };
-
-function getMockCandidatesForPosition(pos: string) {
-  return [
-    { id: '101', first_name: 'Amit', last_name: 'Sharma', email_id: 'amit@gmail.com', phone_number: '9988776655', status: 'l1_scheduled', updated_by_name: 'Rahul' },
-    { id: '102', first_name: 'Neha', last_name: 'Patel', email_id: 'neha@gmail.com', phone_number: '8877665544', status: 'applied', updated_by_name: 'Keerthana' },
-  ];
-}
 
 const styles = StyleSheet.create({
   container: {

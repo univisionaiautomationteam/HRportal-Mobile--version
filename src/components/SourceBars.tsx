@@ -32,6 +32,7 @@ export const SourceBars: React.FC<SourceBarsProps> = ({ items }) => {
     <ScrollView 
       horizontal 
       showsHorizontalScrollIndicator={false}
+      nestedScrollEnabled={true}
       contentContainerStyle={styles.scrollContainer}
     >
       <View style={styles.barsWrapper}>

@@ -28,7 +28,7 @@ export const OffersListScreen = ({ navigation }: any) => {
   const userRole = user?.role;
   const userEmail = (user as any)?.email || '';
 
-  const [activeTab, setActiveTab] = useState<'workflow' | 'accepted'>('workflow');
+  const [activeTab, setActiveTab] = useState<'workflow' | 'accepted' | 'pending'>('workflow');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [offers, setOffers] = useState<any[]>([]);
@@ -39,9 +39,11 @@ export const OffersListScreen = ({ navigation }: any) => {
 
   const [showMailModal, setShowMailModal] = useState(false);
   const [showManageModal, setShowManageModal] = useState(false);
+  const [showOfferForm, setShowOfferForm] = useState(false);
   const [selectedOffer, setSelectedOffer] = useState<any>(null);
-  const [mailData, setMailData] = useState({
-    to: "", cc: "", subject: "", body: ""
+
+  const [mailData, setMailData] = useState<any>({
+    to: "", cc: "", subject: "", body: "", file: null
   });
   const [mailLoading, setMailLoading] = useState(false);
 
@@ -50,24 +52,27 @@ export const OffersListScreen = ({ navigation }: any) => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [offRes, workflowRes] = await Promise.allSettled([
-        activeTab === "accepted" ? offersAPI.getAcceptedByMe() : offersAPI.getAll(),
-        offersAPI.getWorkflowEmails()
-      ]);
+      let offRes;
+      if (activeTab === "accepted") {
+        offRes = await offersAPI.getAcceptedByMe();
+      } else if (activeTab === "pending") {
+        offRes = await offersAPI.getMyPending();
+      } else {
+        offRes = await offersAPI.getAll();
+      }
 
-      if (offRes.status === 'fulfilled') setOffers(offRes.value.data || []);
+      setOffers(offRes.data || []);
 
-      if (workflowRes.status === 'fulfilled') {
+      const workflowRes = await offersAPI.getWorkflowEmails();
+      if (workflowRes.status === 200 || workflowRes.status === 201) {
         const grouped: any = { Stage1: [], Stage2: [], Stage3: [], HR: [] };
-        workflowRes.value.data.forEach((item: any) => {
+        workflowRes.data.forEach((item: any) => {
           if (grouped[item.stage]) grouped[item.stage].push(item.email);
         });
         setWorkflowEmails(grouped);
       }
     } catch (err) {
-      console.error(err);
-      // Mock fallback
-      setOffers(getMockOffers());
+      console.error('Failed to load offers:', err);
     } finally {
       setLoading(false);
     }
@@ -83,13 +88,22 @@ export const OffersListScreen = ({ navigation }: any) => {
     setRefreshing(false);
   };
 
-  /* ================= WORKFLOW LOGIC ================= */
+  /* ================= NEXT STAGE LOGIC ================= */
 
   const getNextStageEmails = (offer: any) => {
     if (!offer) return [];
-    if (!offer.current_stage || !offer.stage1_status || offer.stage1_status === "-") return workflowEmails.Stage1;
-    if (offer.stage1_status === "Approved" && offer.current_stage === 2) return workflowEmails.Stage2;
-    if (offer.stage2_status === "Approved" && offer.current_stage === 3) return workflowEmails.Stage3;
+    // Workflow not started → Stage1
+    if (!offer.current_stage || offer.stage1_status === "-" || offer.stage1_status === null) {
+      return workflowEmails.Stage1;
+    }
+    // Stage1 approved → Stage2
+    if (offer.stage1_status === "Approved" && offer.current_stage === 2) {
+      return workflowEmails.Stage2;
+    }
+    // Stage2 approved → Stage3
+    if (offer.stage2_status === "Approved" && offer.current_stage === 3) {
+      return workflowEmails.Stage3;
+    }
     return [];
   };
 
@@ -102,23 +116,47 @@ export const OffersListScreen = ({ navigation }: any) => {
     return false;
   };
 
-  const openMailPopup = (offer: any, type: 'approval' | 'letter') => {
+  const openMailPopup = (offer: any) => {
     setSelectedOffer(offer);
-    if (type === 'letter') {
-      setMailData({
-        to: offer.email_id || "",
-        cc: workflowEmails.HR.join(", "),
-        subject: `Offer Letter - ${offer.position}`,
-        body: `Dear ${offer.custom_first_name},\n\nCongratulations!\n\nWe are pleased to offer you the position of ${offer.position}.\n\nRegards,\nHR Team`,
-      });
-    } else {
-      setMailData({
-        to: "",
-        cc: workflowEmails.HR.join(", "),
-        subject: `Offer Approval - ${offer.position}`,
-        body: `Dear Sir/Madam,\n\nPlease review the offer details for approval:\nCandidate: ${offer.custom_first_name} ${offer.custom_last_name}\nPosition: ${offer.position}\n\nRegards,\nHR Team`,
-      });
-    }
+    setMailData({
+      to: "",
+      cc: workflowEmails.HR.join(", "),
+      subject: `Offer Approval - ${offer.position}`,
+      body: `Dear Sir/Madam,
+
+          Please review the offer details below for approval.
+
+          Candidate Name : ${offer.custom_first_name} ${offer.custom_last_name}
+          Position       : ${offer.position}
+          Proposed Salary: ${offer.salary || 'As discussed'}
+
+          Kindly approve or reject the offer.
+
+          Regards,
+          HR Team`,
+      file: null
+    });
+    setShowMailModal(true);
+  };
+
+  const openOfferLetterPopup = (offer: any) => {
+    setSelectedOffer(offer);
+    setMailData({
+      to: offer.email_id || "",
+      cc: workflowEmails.HR.join(", "),
+      subject: `Offer Letter - ${offer.position}`,
+      body: `Dear ${offer.custom_first_name},
+
+Congratulations!
+
+We are pleased to offer you the position of ${offer.position}.
+
+Please find the attached offer letter.
+
+Regards,
+HR Team`,
+      file: null
+    });
     setShowMailModal(true);
   };
 
@@ -127,44 +165,80 @@ export const OffersListScreen = ({ navigation }: any) => {
 
     setMailLoading(true);
     try {
-      const payload = {
-        candidate_id: selectedOffer.candidate_id,
-        offer_id: selectedOffer.offer_id,
-        cc: mailData.cc,
-        subject: mailData.subject,
-        body: mailData.body,
-        to: mailData.to
-      };
+      const formData = new FormData();
+      formData.append("candidate_id", selectedOffer.candidate_id);
+      formData.append("offer_id", selectedOffer.offer_id);
+      formData.append("cc", mailData.cc);
+      formData.append("subject", mailData.subject);
+      formData.append("body", mailData.body);
+
+      // Mobile file attachment would go here if implemented with a picker
+      // if (mailData.file) { formData.append("offerFile", mailData.file); }
 
       if (selectedOffer.overall_status === "Approved") {
-        await offersAPI.sendOfferLetter(payload);
+        formData.append("to", mailData.to);
+        await offersAPI.sendOfferLetter(formData);
       } else {
-        // Correct endpoint for workflow nextEmail
-        await offersAPI.workflow(selectedOffer.offer_id, { ...payload, nextEmail: mailData.to });
+        formData.append("nextEmail", mailData.to);
+        await offersAPI.workflow(selectedOffer.offer_id, formData);
       }
 
-      Alert.alert("Success", "Workflow email sent successfully.");
+      Alert.alert("Success", "Mail sent successfully.");
       setShowMailModal(false);
       loadData();
     } catch (err) {
-      Alert.alert("Error", "Failed to send email.");
+      console.error(err);
+      Alert.alert("Error", "Mail failed.");
     } finally {
       setMailLoading(false);
     }
   };
 
   const handleRemoveWorkflow = (id: string) => {
-    Alert.alert("Confirm Remove", "Are you sure you want to remove this workflow?", [
+    Alert.alert("Confirm Remove", "Remove this workflow?", [
       { text: "Cancel", style: "cancel" },
       { text: "Remove", style: "destructive", onPress: async () => {
         try {
           await offersAPI.delete(id);
+          Alert.alert("Success", "Workflow removed successfully");
           loadData();
         } catch (e) {
           Alert.alert("Error", "Failed to remove workflow.");
         }
       }}
     ]);
+  };
+
+  /* ================= EMAIL MANAGEMENT ================= */
+
+  const addEmail = (stage: string) => {
+    setWorkflowEmails({
+      ...workflowEmails,
+      [stage]: [...workflowEmails[stage], ""]
+    });
+  };
+
+  const updateEmail = (stage: string, index: number, value: string) => {
+    const updated = [...workflowEmails[stage]];
+    updated[index] = value;
+    setWorkflowEmails({ ...workflowEmails, [stage]: updated });
+  };
+
+  const removeEmail = (stage: string, index: number) => {
+    const updated = [...workflowEmails[stage]];
+    updated.splice(index, 1);
+    setWorkflowEmails({ ...workflowEmails, [stage]: updated });
+  };
+
+  const saveWorkflowEmails = async () => {
+    try {
+      await offersAPI.saveWorkflowEmails(workflowEmails);
+      Alert.alert("Success", "Emails saved");
+      setShowManageModal(false);
+      loadData();
+    } catch {
+      Alert.alert("Error", "Save failed");
+    }
   };
 
   /* ================= RENDER ================= */
@@ -180,6 +254,7 @@ export const OffersListScreen = ({ navigation }: any) => {
           <View style={{ flex: 1 }}>
             <Text style={[styles.candName, { color: theme.text }]}>{item.custom_first_name} {item.custom_last_name}</Text>
             <Text style={[styles.candSub, { color: theme.textSecondary }]}>{item.position}</Text>
+            <Text style={[styles.candEmail, { color: theme.textSecondary }]}>{item.email_id}</Text>
           </View>
           <View style={[styles.overallBadge, { backgroundColor: '#F1F5F9' }]}>
             <Text style={[styles.overallBadgeText, { color: '#475569' }]}>{item.overall_status || "Not Started"}</Text>
@@ -187,29 +262,29 @@ export const OffersListScreen = ({ navigation }: any) => {
         </View>
 
         <View style={styles.workflowRow}>
-          <StageBadge label="S1" status={item.stage1_status} user={item.stage1_approved_by} />
-          <StageBadge label="S2" status={item.stage2_status} user={item.stage2_approved_by} />
-          <StageBadge label="S3" status={item.stage3_status} user={item.stage3_approved_by} />
+          <StageItem label="Stage1" status={item.stage1_status} user={item.stage1_approved_by} />
+          <StageItem label="Stage2" status={item.stage2_status} user={item.stage2_approved_by} />
+          <StageItem label="Stage3" status={item.stage3_status} user={item.stage3_approved_by} />
         </View>
 
         <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
         <View style={styles.cardFooter}>
           <View style={{ flex: 1 }}>
-            {accepted ? <Text style={styles.acceptedText}>✔ Accepted</Text> :
-             rejected ? <Text style={styles.rejectedText}>✖ Rejected</Text> : null}
+            {accepted ? <Text style={styles.acceptedText}>✔ Candidate Accepted Offer</Text> :
+             rejected ? <Text style={styles.rejectedText}>✖ Candidate Rejected Offer</Text> : null}
           </View>
 
           <View style={styles.actions}>
             {!accepted && !rejected && (
               <>
                 {item.overall_status === "Approved" && isStage3Sender ? (
-                  <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.primary }]} onPress={() => openMailPopup(item, 'letter')}>
+                  <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.primary }]} onPress={() => openOfferLetterPopup(item)}>
                     <Send size={14} color="#fff" />
-                    <Text style={styles.actionBtnText}>Send Offer</Text>
+                    <Text style={styles.actionBtnText}>Send Offer Letter</Text>
                   </TouchableOpacity>
                 ) : canAssignStage(item) && item.overall_status !== "Approved" ? (
-                  <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.primary }]} onPress={() => openMailPopup(item, 'approval')}>
+                  <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.primary }]} onPress={() => openMailPopup(item)}>
                     <Clock size={14} color="#fff" />
                     <Text style={styles.actionBtnText}>Assign Stage</Text>
                   </TouchableOpacity>
@@ -233,26 +308,35 @@ export const OffersListScreen = ({ navigation }: any) => {
       <StatusBar barStyle="dark-content" />
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.pageTitle, { color: theme.text }]}>Offer Workflow</Text>
-          <Text style={[styles.pageSubtitle, { color: theme.textSecondary }]}>Manage approvals and offer letters</Text>
+          <Text style={[styles.pageTitle, { color: theme.text }]}>Offer Workflow Management</Text>
+          <Text style={[styles.pageSubtitle, { color: theme.textSecondary }]}>NOTE: All the offers are accepted by the Outlook or Gmail only</Text>
         </View>
         {userRole?.toLowerCase() === "hr manager" && (
-          <TouchableOpacity style={styles.settingsBtn} onPress={() => setShowManageModal(true)}>
-            <Settings size={20} color={theme.text} />
+          <TouchableOpacity style={styles.manageBtn} onPress={() => setShowManageModal(true)}>
+            <Text style={styles.manageBtnText}>Manage Workflow Emails</Text>
           </TouchableOpacity>
         )}
       </View>
 
       <View style={[styles.tabs, { backgroundColor: theme.surface }]}>
-        {(['workflow', 'accepted'] as const).map(t => (
-          <TouchableOpacity
-            key={t}
-            style={[styles.tab, activeTab === t && styles.tabActive]}
-            onPress={() => setActiveTab(t)}
-          >
-            <Text style={[styles.tabText, activeTab === t && { color: '#fff' }]}>{t === 'workflow' ? 'All Active' : 'My Accepted'}</Text>
-          </TouchableOpacity>
-        ))}
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'workflow' && styles.tabActive]}
+          onPress={() => setActiveTab('workflow')}
+        >
+          <Text style={[styles.tabText, activeTab === 'workflow' && { color: '#fff' }]}>Workflow</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'pending' && styles.tabActive]}
+          onPress={() => setActiveTab('pending')}
+        >
+          <Text style={[styles.tabText, activeTab === 'pending' && { color: '#fff' }]}>Pending For You</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'accepted' && styles.tabActive]}
+          onPress={() => setActiveTab('accepted')}
+        >
+          <Text style={[styles.tabText, activeTab === 'accepted' && { color: '#fff' }]}>You Accepted</Text>
+        </TouchableOpacity>
       </View>
 
       <FlatList
@@ -261,16 +345,29 @@ export const OffersListScreen = ({ navigation }: any) => {
         renderItem={renderOfferItem}
         refreshing={refreshing}
         onRefresh={handleRefresh}
-        contentContainerStyle={{ padding: 24, paddingTop: 8 }}
-        ListEmptyComponent={<Text style={styles.emptyText}>No offers found.</Text>}
+        contentContainerStyle={{ padding: 16, paddingTop: 8 }}
+        ListEmptyComponent={
+          <View style={styles.noData}>
+            <Text style={[styles.noDataTitle, { color: theme.text }]}>No offers found</Text>
+            <Text style={[styles.noDataSub, { color: theme.textSecondary }]}>Please add resumes and start the offer workflow to see candidates here.</Text>
+          </View>
+        }
+        ListFooterComponent={
+          <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+            <TouchableOpacity style={[styles.assignBtn, { paddingHorizontal: 24, paddingVertical: 12 }]} onPress={() => setShowOfferForm(true)}>
+              <Text style={styles.actionBtnText}>Create Offer</Text>
+            </TouchableOpacity>
+          </View>
+        }
       />
 
+      {/* MAIL MODAL */}
       <Modal visible={showMailModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: theme.surface }]}>
-            <View style={styles.modalHeader}>
+            <View style={styles.modalHeaderBox}>
               <Text style={styles.modalTitle}>
-                {selectedOffer?.overall_status === "Approved" ? "Send Offer Letter" : "Assign Approval Stage"}
+                {selectedOffer?.overall_status === "Approved" ? "Send Offer Letter" : "Assign Workflow Stage"}
               </Text>
               <TouchableOpacity onPress={() => setShowMailModal(false)}>
                 <X color="#fff" size={24} />
@@ -278,7 +375,7 @@ export const OffersListScreen = ({ navigation }: any) => {
             </View>
 
             <ScrollView contentContainerStyle={styles.modalBody}>
-              <Text style={styles.label}>Recipient Email *</Text>
+              <Text style={styles.label}>To</Text>
               {selectedOffer?.overall_status === "Approved" ? (
                 <TextInput
                   style={[styles.input, { borderColor: theme.border }]}
@@ -315,112 +412,179 @@ export const OffersListScreen = ({ navigation }: any) => {
                 onChangeText={t => setMailData({...mailData, subject: t})}
               />
 
-              <Text style={styles.label}>Message Body</Text>
+              <Text style={styles.label}>Body</Text>
               <TextInput
                 style={[styles.textArea, { borderColor: theme.border }]}
                 multiline
-                numberOfLines={8}
+                numberOfLines={6}
                 value={mailData.body}
                 onChangeText={t => setMailData({...mailData, body: t})}
               />
 
-              <Button
-                label={mailLoading ? "Sending..." : "Dispatch Email"}
-                onPress={handleSendMail}
-                loading={mailLoading}
-                style={{ marginTop: 20 }}
-              />
+              <View style={styles.modalActions}>
+                <Button
+                  label={mailLoading ? "Sending..." : "Send Mail"}
+                  onPress={handleSendMail}
+                  loading={mailLoading}
+                  style={{ flex: 1 }}
+                />
+                <Button
+                  label="Cancel"
+                  variant="outline"
+                  onPress={() => setShowMailModal(false)}
+                  style={{ flex: 1 }}
+                />
+              </View>
             </ScrollView>
           </View>
         </View>
       </Modal>
+
+      {/* MANAGE MODAL */}
+      <Modal visible={showManageModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: theme.surface, height: '80%' }]}>
+            <View style={styles.modalHeaderBox}>
+              <Text style={styles.modalTitle}>Manage Workflow Emails</Text>
+              <TouchableOpacity onPress={() => setShowManageModal(false)}>
+                <X color="#fff" size={24} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView contentContainerStyle={styles.modalBody}>
+              {Object.keys(workflowEmails).map((stage) => (
+                <View key={stage} style={styles.manageSection}>
+                  <Text style={styles.stageHeading}>{stage}</Text>
+                  {workflowEmails[stage].map((email: string, i: number) => (
+                    <View key={i} style={styles.emailEditRow}>
+                      <TextInput
+                        style={[styles.input, { flex: 1, marginBottom: 0 }]}
+                        value={email}
+                        onChangeText={(val) => updateEmail(stage, i, val)}
+                      />
+                      <TouchableOpacity onPress={() => removeEmail(stage, i)} style={styles.deleteIcon}>
+                        <Trash2 size={20} color={theme.danger} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                  <TouchableOpacity style={styles.addEmailBtn} onPress={() => addEmail(stage)}>
+                    <Text style={[styles.addEmailText, { color: theme.primary }]}>+ Add Email</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+              <View style={styles.modalActions}>
+                <Button label="Save" onPress={saveWorkflowEmails} style={{ flex: 1 }} />
+                <Button label="Cancel" variant="outline" onPress={() => setShowManageModal(false)} style={{ flex: 1 }} />
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* CREATE OFFER MODAL */}
+      <Modal visible={showOfferForm} animationType="fade" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: theme.surface, height: '90%' }]}>
+            <View style={styles.modalHeaderBox}>
+              <Text style={styles.modalTitle}>Create Offer Letter</Text>
+              <TouchableOpacity onPress={() => setShowOfferForm(false)}>
+                <X color="#fff" size={24} />
+              </TouchableOpacity>
+            </View>
+            <View style={{ flex: 1, padding: 20, justifyContent: 'center', alignItems: 'center' }}>
+               <FileText size={64} color={theme.primary} opacity={0.2} />
+               <Text style={{ marginTop: 20, textAlign: 'center', color: theme.textSecondary }}>The Offer Editor is optimized for desktop browsers. Please use the Web Portal for full document editing and preview.</Text>
+               <Button label="Close" onPress={() => setShowOfferForm(false)} style={{ marginTop: 20, width: '100%' }} />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 };
 
-const StageBadge = ({ label, status, user }: any) => {
-  const color = status === "Approved" ? "#059669" : status === "Rejected" ? "#DC2626" : "#64748B";
-  const bg = status === "Approved" ? "#ECFDF5" : status === "Rejected" ? "#FEE2E2" : "#F1F5F9";
+const StageItem = ({ label, status, user }: any) => {
+  const isApproved = status === "Approved";
+  const isRejected = status === "Rejected";
+  const isPending = status === "Pending";
+
+  const color = isApproved ? "#16a34a" : isRejected ? "#dc2626" : isPending ? "#f59e0b" : "#64748B";
 
   return (
     <View style={styles.stageItem}>
-      <View style={[styles.stageIndicator, { backgroundColor: bg, borderColor: color }]}>
-        <Text style={[styles.stageLabel, { color }]}>{label}</Text>
-      </View>
-      <Text style={[styles.stageStatus, { color }]} numberOfLines={1}>{status || "Pending"}</Text>
+      <Text style={styles.stageLabel}>{label}</Text>
+      <Text style={[styles.stageStatus, { color }]}>
+        {isApproved ? "✔ Approved" : isRejected ? "✖ Rejected" : status || "-"}
+      </Text>
       {user ? <Text style={styles.stageUser} numberOfLines={1}>{user}</Text> : null}
     </View>
   );
 };
-
-function getMockOffers() {
-  return [
-    { offer_id: 'o1', candidate_id: 'c1', custom_first_name: 'Amit', custom_last_name: 'Sharma', email_id: 'amit@gmail.com', position: 'Node.js Developer', stage1_status: 'Approved', stage1_approved_by: 'manager@univision.com', current_stage: 2, overall_status: 'In Progress' },
-    { offer_id: 'o2', candidate_id: 'c2', custom_first_name: 'Neha', custom_last_name: 'Patel', email_id: 'neha@gmail.com', position: 'React Native Expert', stage1_status: 'Approved', stage2_status: 'Approved', current_stage: 3, overall_status: 'Approved', stage3_approved_by: 'keerthana@univision.com' },
-  ];
-}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 24,
+    padding: 20,
   },
   pageTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
     fontFamily: 'Times New Roman',
   },
   pageSubtitle: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'Times New Roman',
     marginTop: 4,
+    fontWeight: '600',
   },
-  settingsBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    justifyContent: 'center',
-    alignItems: 'center',
+  manageBtn: {
+    backgroundColor: '#16a34a',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    marginTop: 12,
+    alignSelf: 'flex-start',
+  },
+  manageBtnText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
   },
   tabs: {
     flexDirection: 'row',
-    marginHorizontal: 24,
-    padding: 6,
-    borderRadius: 12,
-    marginBottom: 16,
+    marginHorizontal: 16,
+    padding: 4,
+    borderRadius: 8,
+    marginBottom: 12,
   },
   tab: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 8,
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: 6,
   },
   tabActive: {
-    backgroundColor: '#0F172A',
+    backgroundColor: '#1f3c88',
   },
   tabText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     fontFamily: 'Times New Roman',
     color: '#64748B',
   },
   offerCard: {
-    marginBottom: 16,
+    marginBottom: 12,
+    padding: 16,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 16,
   },
   candName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     fontFamily: 'Times New Roman',
   },
@@ -429,100 +593,98 @@ const styles = StyleSheet.create({
     fontFamily: 'Times New Roman',
     marginTop: 2,
   },
+  candEmail: {
+    fontSize: 12,
+    marginTop: 2,
+  },
   overallBadge: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 4,
   },
   overallBadgeText: {
     fontSize: 10,
     fontWeight: '700',
-    fontFamily: 'Times New Roman',
     textTransform: 'uppercase',
   },
   workflowRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    padding: 12,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 12,
   },
   stageItem: {
     flex: 1,
-    alignItems: 'center',
-  },
-  stageIndicator: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 6,
   },
   stageLabel: {
-    fontSize: 12,
-    fontWeight: '800',
-    fontFamily: 'Times New Roman',
-  },
-  stageStatus: {
     fontSize: 10,
     fontWeight: '700',
-    fontFamily: 'Times New Roman',
+    color: '#1f3c88',
+    marginBottom: 2,
+  },
+  stageStatus: {
+    fontSize: 11,
+    fontWeight: '600',
   },
   stageUser: {
     fontSize: 9,
-    color: '#94A3B8',
-    fontFamily: 'Times New Roman',
+    color: '#777',
     marginTop: 2,
   },
   divider: {
     height: 1,
-    marginVertical: 16,
+    marginVertical: 12,
   },
   cardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
   },
   acceptedText: {
-    color: '#059669',
+    color: '#16a34a',
     fontWeight: '700',
-    fontSize: 13,
-    fontFamily: 'Times New Roman',
+    fontSize: 12,
   },
   rejectedText: {
-    color: '#DC2626',
+    color: '#dc2626',
     fontWeight: '700',
-    fontSize: 13,
-    fontFamily: 'Times New Roman',
+    fontSize: 12,
   },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
   actionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
   },
   actionBtnText: {
     color: '#fff',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
-    fontFamily: 'Times New Roman',
   },
   trashBtn: {
-    padding: 8,
+    padding: 6,
   },
-  emptyText: {
+  noData: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  noDataTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  noDataSub: {
     textAlign: 'center',
-    marginTop: 40,
-    color: '#64748B',
-    fontFamily: 'Times New Roman',
+    fontSize: 14,
   },
   modalOverlay: {
     flex: 1,
@@ -530,76 +692,114 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalCard: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     maxHeight: '90%',
     overflow: 'hidden',
   },
-  modalHeader: {
+  modalHeaderBox: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 24,
-    backgroundColor: '#0F172A',
+    padding: 20,
+    backgroundColor: '#1f3c88',
   },
   modalTitle: {
     color: '#fff',
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
-    fontFamily: 'Times New Roman',
   },
   modalBody: {
-    padding: 24,
+    padding: 20,
   },
   label: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: 8,
-    fontFamily: 'Times New Roman',
+    color: '#1f2937',
+    marginBottom: 6,
   },
   input: {
-    height: 48,
-    borderRadius: 10,
+    height: 40,
+    borderRadius: 6,
     borderWidth: 1,
-    paddingHorizontal: 16,
-    marginBottom: 20,
-    fontSize: 14,
-    fontFamily: 'Times New Roman',
+    paddingHorizontal: 12,
+    marginBottom: 16,
+    fontSize: 13,
+    backgroundColor: '#f9fafb',
   },
   textArea: {
-    minHeight: 120,
-    borderRadius: 10,
+    minHeight: 100,
+    borderRadius: 6,
     borderWidth: 1,
-    padding: 16,
-    marginBottom: 20,
-    fontSize: 14,
-    fontFamily: 'Times New Roman',
+    padding: 12,
+    marginBottom: 16,
+    fontSize: 13,
     textAlignVertical: 'top',
+    backgroundColor: '#f9fafb',
   },
   pickerContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 20,
+    marginBottom: 16,
   },
   emailPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 15,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#c7d2fe',
+    backgroundColor: '#f1f5ff',
   },
   emailPillText: {
-    fontSize: 12,
-    fontFamily: 'Times New Roman',
+    fontSize: 11,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
   },
   errorText: {
-    color: '#DC2626',
+    color: '#dc2626',
     fontSize: 12,
     fontStyle: 'italic',
-    fontFamily: 'Times New Roman',
-  }
+  },
+  manageSection: {
+    marginBottom: 20,
+    backgroundColor: '#f8fafc',
+    padding: 12,
+    borderRadius: 8,
+  },
+  stageHeading: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1e3a8a',
+    marginBottom: 10,
+    textTransform: 'uppercase',
+  },
+  emailEditRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 8,
+  },
+  deleteIcon: {
+    padding: 4,
+  },
+  addEmailBtn: {
+    marginTop: 4,
+  },
+  addEmailText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  assignBtn: {
+  backgroundColor: '#1f3c88',
+  borderRadius: 8,
+  alignItems: 'center',
+  justifyContent: 'center',
+}
 });
 
 export default OffersListScreen;
+

@@ -1,4 +1,4 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useEffect, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
@@ -34,7 +34,8 @@ const SOURCE_COLORS = ['#2f7df6', '#22b573', '#7a5af8', '#ff8a00', '#95a4bd'];
 export const DashboardScreen = ({ navigation }: any) => {
   const { theme } = useTheme();
   const { user } = useAuth();
-  
+  const insets = useSafeAreaInsets();
+
   const [refreshing, setRefreshing] = useState(false);
   const [topHrLimit, setTopHrLimit] = useState<'all' | number>(4);
   const [donutPeriod, setDonutPeriod] = useState<string>('this_week');
@@ -79,13 +80,6 @@ export const DashboardScreen = ({ navigation }: any) => {
         next.offers = offRes.value.data;
       } else {
         next.errors.offers = 'Error';
-      }
-
-      // 3 Prefilled data fallback for evaluation if API is empty
-      if (!next.candidates.length) {
-        next.candidates = getMockCandidates();
-        next.interviews = getMockInterviews();
-        next.offers = getMockOffers();
       }
 
       setData(next);
@@ -263,9 +257,11 @@ export const DashboardScreen = ({ navigation }: any) => {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
       <ScrollView 
-        contentContainerStyle={styles.scrollContent}
+        style={{ flex: 1 }}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
+        showsVerticalScrollIndicator={true}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.primary} />}
       >
         <View style={styles.headline}>
@@ -284,16 +280,21 @@ export const DashboardScreen = ({ navigation }: any) => {
 
         <QuickActions
           onAddCandidate={() => navigation.navigate('CandidatesTab', { screen: 'CandidatesList' })}
-          onScheduleInterview={() => navigation.navigate('Interviews')}
+          onScheduleInterview={() => navigation.navigate('AI')}
           onAIAssistant={() => navigation.navigate('AI')}
         />
-
+ 
         <Card title="Application Overview">
-          <DonutChart total={dashboard.applicationTotal} items={dashboard.applicationOverview} />
+          <View style={{ height: 180 }}>
+           <DonutChart total={dashboard.applicationTotal}  items={dashboard.applicationOverview} />
+          </View>
         </Card>
+        <View style={{ height: 300, backgroundColor: 'red' }}>
+  <Text>SCROLL TEST</Text>
+</View>
 
         <Card title="Calendar Schedule">
-          <UpcomingInterviews items={dashboard.upcomingInterviews} onViewAll={() => navigation.navigate('Interviews')} />
+          <UpcomingInterviews items={dashboard.upcomingInterviews} onViewAll={() => navigation.navigate('AI')} />
         </Card>
 
         <Card title="Candidates Created by HR">
@@ -304,32 +305,9 @@ export const DashboardScreen = ({ navigation }: any) => {
           <ActivityList items={dashboard.activities} />
         </Card>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
-
-function getMockCandidates() {
-  return [
-    { id: '101', first_name: 'Amit', last_name: 'Sharma', position: 'Node.js Developer', status: 'l1_scheduled', created_by_name: 'Rahul', created_at: new Date(Date.now() - 3600000 * 2).toISOString(), updated_at: new Date().toISOString() },
-    { id: '102', first_name: 'Neha', last_name: 'Patel', position: 'React Native Expert', status: 'col_issued', created_by_name: 'Rahul', created_at: new Date(Date.now() - 3600000 * 24).toISOString(), updated_at: new Date().toISOString() },
-    { id: '103', first_name: 'Varun', last_name: 'Kumar', position: 'Solutions Architect', status: 'joined', created_by_name: 'Keerthana', created_at: new Date(Date.now() - 3600000 * 48).toISOString(), updated_at: new Date().toISOString() },
-  ];
-}
-
-function getMockInterviews() {
-  return [
-    { id: 'i1', candidate_name: 'Amit Sharma', position: 'Node.js Developer', scheduled_date: new Date(Date.now() + 3600000 * 24).toISOString(), status: 'scheduled', created_at: new Date().toISOString() },
-    { id: 'i2', candidate_name: 'Neha Patel', position: 'React Native Expert', scheduled_date: new Date(Date.now() + 3600000 * 48).toISOString(), status: 'scheduled', created_at: new Date().toISOString() },
-    { id: 'i3', candidate_name: 'Varun Kumar', position: 'Solutions Architect', scheduled_date: new Date(Date.now() + 3600000 * 72).toISOString(), status: 'scheduled', created_at: new Date().toISOString() },
-  ];
-}
-
-function getMockOffers() {
-  return [
-    { id: 'o1', candidate_name: 'Neha Patel', position: 'React Native Expert', status: 'pending', created_at: new Date().toISOString() },
-    { id: 'o2', candidate_name: 'Amit Sharma', position: 'Node.js Developer', status: 'pending', created_at: new Date().toISOString() },
-  ];
-}
 
 const styles = StyleSheet.create({
   container: {

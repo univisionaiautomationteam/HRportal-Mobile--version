@@ -55,11 +55,6 @@ export const CandidateDetailScreen = ({ route, navigation }: any) => {
       setJobs(jobsRes.data || []);
     } catch (err) {
       console.error('Failed to load candidate details:', err);
-      // Mock fallback
-      const mock = getMockDetails(id);
-      setCandidate(mock.candidate);
-      setFormData(mock.candidate);
-      setRemarks(mock.remarks);
     } finally {
       setLoading(false);
     }
@@ -387,13 +382,6 @@ const EditableField = ({ label, value, editMode, onChange, textarea, style }: an
     )}
   </View>
 );
-
-function getMockDetails(id: string) {
-  return {
-    candidate: { id, first_name: 'Amit', last_name: 'Sharma', email_id: 'amit@gmail.com', phone_number: '9988776655', position: 'Node.js Developer', status: 'l1_scheduled', created_at: new Date().toISOString() },
-    remarks: [{ id: 'r1', title: 'Status Update', description: 'Screening cleared.', created_at: new Date().toISOString(), updated_by_name: 'Rahul' }]
-  };
-}
 
 const styles = StyleSheet.create({
   container: {

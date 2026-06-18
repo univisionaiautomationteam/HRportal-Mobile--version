@@ -45,13 +45,6 @@ export const JobsScreen = ({ navigation }: any) => {
       }
     } catch (err) {
       console.error('Failed to load jobs:', err);
-      // Fallback for evaluation if API fails
-      setJobs(getMockJobs());
-      setCounts({
-        'Node.js Developer - Univision': 12,
-        'React Native Expert - TechCorp': 8,
-        'Solutions Architect - CloudNet': 5
-      });
     } finally {
       setLoading(false);
     }
@@ -166,14 +159,6 @@ export const JobsScreen = ({ navigation }: any) => {
     </SafeAreaView>
   );
 };
-
-function getMockJobs() {
-  return [
-    { id: 'j1', title: 'Node.js Developer', client_name: 'Univision' },
-    { id: 'j2', title: 'React Native Expert', client_name: 'TechCorp' },
-    { id: 'j3', title: 'Solutions Architect', client_name: 'CloudNet' }
-  ];
-}
 
 const styles = StyleSheet.create({
   container: {

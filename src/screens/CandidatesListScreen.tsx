@@ -81,18 +81,8 @@ export const CandidatesListScreen = ({ navigation }: any) => {
       clearForm();
       loadCandidates();
     } catch (err) {
-      // Mock fallback for ease of sandbox evaluation
-      const newCand = {
-        id: Math.random().toString(),
-        ...formData,
-        status: 'applied',
-        created_at: new Date().toISOString(),
-        owner_name: 'Rahul',
-      };
-      setCandidates([newCand, ...candidates]);
-      Alert.alert('Sandbox Registered', 'Candidate added locally.');
-      setShowAddModal(false);
-      clearForm();
+      console.error('Failed to register candidate:', err);
+      Alert.alert('Error', 'Could not register candidate on the server.');
     } finally {
       setFormLoading(false);
     }
@@ -551,14 +541,6 @@ export const CandidatesListScreen = ({ navigation }: any) => {
     </SafeAreaView>
   );
 };
-
-function getMockCandidates() {
-  return [
-    { id: '101', first_name: 'Amit', last_name: 'Sharma', position: 'Node.js Developer', status: 'l1_scheduled', email_id: 'amit@gmail.com', phone_number: '9988776655', owner_name: 'Rahul', created_at: new Date(Date.now() - 3600000 * 2).toISOString() },
-    { id: '102', first_name: 'Neha', last_name: 'Patel', position: 'React Native Expert', status: 'col_issued', email_id: 'neha@gmail.com', phone_number: '8877665544', owner_name: 'Rahul', created_at: new Date(Date.now() - 3600000 * 24).toISOString() },
-    { id: '103', first_name: 'Varun', last_name: 'Kumar', position: 'Solutions Architect', status: 'joined', email_id: 'varun@gmail.com', phone_number: '7766554433', owner_name: 'Keerthana', created_at: new Date(Date.now() - 3600000 * 48).toISOString() },
-  ];
-}
 
 const styles = StyleSheet.create({
   container: {

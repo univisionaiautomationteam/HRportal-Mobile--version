@@ -40,9 +40,15 @@ export const LoginScreen = ({ navigation }: any) => {
   };
 
   const handleMicrosoftLogin = async () => {
-    // TEMPORARY LOGIN BYPASS
-    navigation.replace('HRPortal');
-  };
+  await login(
+    'dummy-token',
+    {
+      id: '1',
+      name: 'Test User',
+      email: 'test@test.com',
+    } as any
+  );
+};
 
   const handleGoogleLogin = async () => {
     if (loading) return;
