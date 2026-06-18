@@ -258,7 +258,7 @@ export const DashboardScreen = ({ navigation }: any) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
-      <ScrollView 
+      <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={true}
@@ -283,15 +283,15 @@ export const DashboardScreen = ({ navigation }: any) => {
           onScheduleInterview={() => navigation.navigate('AI')}
           onAIAssistant={() => navigation.navigate('AI')}
         />
- 
+
         <Card title="Application Overview">
           <View style={{ height: 180 }}>
-           <DonutChart total={dashboard.applicationTotal}  items={dashboard.applicationOverview} />
+            <DonutChart total={dashboard.applicationTotal} items={dashboard.applicationOverview} />
           </View>
         </Card>
         <View style={{ height: 300, backgroundColor: 'red' }}>
-  <Text>SCROLL TEST</Text>
-</View>
+          <Text>SCROLL TEST</Text>
+        </View>
 
         <Card title="Calendar Schedule">
           <UpcomingInterviews items={dashboard.upcomingInterviews} onViewAll={() => navigation.navigate('AI')} />

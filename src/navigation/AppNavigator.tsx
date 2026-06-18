@@ -4,13 +4,13 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { SIZES, TYPOGRAPHY } from '../constants/theme';
-import { 
-  Home, 
-  Users, 
-  Briefcase, 
+import {
+  Home,
+  Users,
+  Briefcase,
   Bot,
-  Sparkles, 
-  FileText, 
+  Sparkles,
+  FileText,
   User as UserIcon,
   Lock
 } from 'lucide-react-native';
@@ -81,14 +81,14 @@ const CandidateNavigator = () => {
         headerShadowVisible: false,
       }}
     >
-      <CandidateStack.Screen 
-        name="CandidatesList" 
-        component={CandidatesListScreen} 
+      <CandidateStack.Screen
+        name="CandidatesList"
+        component={CandidatesListScreen}
         options={{ title: 'Candidates' }}
       />
-      <CandidateStack.Screen 
-        name="CandidateDetail" 
-        component={CandidateDetailScreen} 
+      <CandidateStack.Screen
+        name="CandidateDetail"
+        component={CandidateDetailScreen}
         options={{ title: 'Candidate Profile' }}
       />
     </CandidateStack.Navigator>
@@ -107,19 +107,19 @@ const JobNavigator = () => {
         headerShadowVisible: false,
       }}
     >
-      <JobStack.Screen 
-        name="JobsList" 
-        component={JobsScreen} 
+      <JobStack.Screen
+        name="JobsList"
+        component={JobsScreen}
         options={{ title: 'Job Openings' }}
       />
-      <JobStack.Screen 
-        name="CreateJob" 
-        component={CreateJobScreen} 
+      <JobStack.Screen
+        name="CreateJob"
+        component={CreateJobScreen}
         options={{ title: 'Create Job' }}
       />
-      <JobStack.Screen 
-        name="JobDetail" 
-        component={JobDetailScreen} 
+      <JobStack.Screen
+        name="JobDetail"
+        component={JobDetailScreen}
         options={{ title: 'Job Insights' }}
       />
     </JobStack.Navigator>
