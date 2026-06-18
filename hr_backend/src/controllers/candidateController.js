@@ -240,6 +240,37 @@ export const getCandidates = async (req, res) => {
   }
 };
 
+export const getAllCandidatesInternal = async () => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT
+        c.id,
+        c.custom_first_name AS first_name,
+        c.custom_last_name AS last_name,
+        c.email_id,
+        c.phone_number,
+        c.skills,
+        c.status,
+        c.position,
+        c.created_at,
+        c.created_by AS created_by_id,
+        c.created_by_name,
+        c.assigned_to AS owner_id,
+        c.assigned_to_name AS owner_name,
+        c.updated_at,
+        COALESCE(u.name, c.updated_by_name, 'Unknown') AS updated_by_name
+      FROM candidates c
+      LEFT JOIN users u ON c.updated_by = u.id
+      ORDER BY c.created_at DESC
+      LIMIT 5000
+    `);
+    return rows;
+  } catch (err) {
+    console.error('getAllCandidatesInternal error:', err);
+    return [];
+  }
+};
+
 /* ================= DETAIL ================= */
 export const getCandidateById = async (req, res) => {
   const [rows] = await pool.query(

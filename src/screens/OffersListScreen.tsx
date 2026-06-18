@@ -1,6 +1,7 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useEffect, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, Modal, TextInput, ScrollView, StatusBar, Platform } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { SIZES, TYPOGRAPHY } from '../constants/theme';
@@ -46,6 +47,22 @@ export const OffersListScreen = ({ navigation }: any) => {
     to: "", cc: "", subject: "", body: "", file: null
   });
   const [mailLoading, setMailLoading] = useState(false);
+
+  const [offerFormData, setOfferFormData] = useState({
+    name: '',
+    location: '',
+    role: '',
+    salary: '',
+    fixedSalary: '',
+    variableSalary: '',
+    variableType: '',
+    date: '',
+    experience: 'fresher',
+    templateType: 'col',
+  });
+  const [generatedHtml, setGeneratedHtml] = useState('');
+  const [showOfferActionModal, setShowOfferActionModal] = useState(false);
+  const [generatingOffer, setGeneratingOffer] = useState(false);
 
   /* ================= FETCH DATA ================= */
 
@@ -158,6 +175,103 @@ HR Team`,
       file: null
     });
     setShowMailModal(true);
+  };
+
+  const handleGenerateOffer = async () => {
+    try {
+      setGeneratingOffer(true);
+      const res = await fetch("http://10.60.102.146:5000/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(offerFormData)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Construct the EXACT preview wrapper the user requested
+        const previewWrapperHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Preview</title>
+  <style>
+    body{ background:#dcdcdc; margin:0; padding:10px; font-family:Arial, sans-serif; }
+    .pdf-page{ width:210mm; min-height:297mm; margin:10px auto; padding:20mm; background:white; box-shadow:0 0 10px rgba(0,0,0,0.2); box-sizing:border-box; overflow:hidden; page-break-after:always; }
+    #approveBtn, #downloadBtn{ margin-top:20px; padding:12px 24px; font-size:16px; border:none; background:#007bff; color:white; border-radius:6px; cursor:pointer; margin-right:10px; }
+    #approveBtn:hover, #downloadBtn:hover{ background:#0056b3; }
+  </style>
+</head>
+<body>
+<div id="previewWrapper"></div>
+<div class="btn-container">
+  <button id="downloadBtn">Download PDF</button>
+  <button id="approveBtn">Approve & Send</button>
+</div>
+<script>
+const rawHtml = \`${data.html.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`;
+const pages = rawHtml.split('<div class="page-break"></div>');
+const wrapper = document.getElementById("previewWrapper");
+wrapper.innerHTML = pages.map(page => '<div class="pdf-page" contenteditable="true">' + page + '</div>').join("");
+
+function getUpdatedHtml() {
+  const previewContent = wrapper.innerHTML;
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{margin:0;padding:0;font-family:Arial,sans-serif;}</style></head><body>' + previewContent + '</body></html>';
+}
+
+document.getElementById("downloadBtn").addEventListener("click", () => {
+  window.ReactNativeWebView.postMessage(JSON.stringify({ action: 'DOWNLOAD', html: getUpdatedHtml() }));
+});
+
+document.getElementById("approveBtn").addEventListener("click", () => {
+  const email = prompt("Enter candidate email");
+  if(email) {
+    window.ReactNativeWebView.postMessage(JSON.stringify({ action: 'SEND', email: email, html: getUpdatedHtml() }));
+  } else {
+    alert("Email is required");
+  }
+});
+</script>
+</body>
+</html>
+        `;
+
+        setGeneratedHtml(previewWrapperHtml);
+        setShowOfferForm(false);
+        setShowOfferActionModal(true);
+      } else {
+        Alert.alert("Error", "Failed to generate offer letter.");
+      }
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "Failed to generate offer letter.");
+    } finally {
+      setGeneratingOffer(false);
+    }
+  };
+
+  const handleWebViewMessage = async (event: any) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      if (data.action === 'SEND') {
+        setGeneratingOffer(true);
+        const res = await fetch("http://10.60.102.146:5000/api/send-mail", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ html: data.html, email: data.email })
+        });
+        if (res.ok) {
+          Alert.alert("Success", "Mail Sent");
+          setShowOfferActionModal(false);
+        } else {
+          Alert.alert("Error", "Failed to send mail");
+        }
+        setGeneratingOffer(false);
+      } else if (data.action === 'DOWNLOAD') {
+        Alert.alert("Notice", "PDF Download requested! (Note: React Native requires additional modules like rn-fetch-blob to save files directly to the device. Please use the web portal for direct PDF downloading.)");
+      }
+    } catch (err) {
+      console.error(err);
+      setGeneratingOffer(false);
+    }
   };
 
   const handleSendMail = async () => {
@@ -481,20 +595,111 @@ HR Team`,
       </Modal>
 
       {/* CREATE OFFER MODAL */}
-      <Modal visible={showOfferForm} animationType="fade" transparent>
+      <Modal visible={showOfferForm} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: theme.surface, height: '90%' }]}>
             <View style={styles.modalHeaderBox}>
-              <Text style={styles.modalTitle}>Create Offer Letter</Text>
+              <Text style={styles.modalTitle}>Generate Offer Letter</Text>
               <TouchableOpacity onPress={() => setShowOfferForm(false)}>
                 <X color="#fff" size={24} />
               </TouchableOpacity>
             </View>
-            <View style={{ flex: 1, padding: 20, justifyContent: 'center', alignItems: 'center' }}>
-               <FileText size={64} color={theme.primary} opacity={0.2} />
-               <Text style={{ marginTop: 20, textAlign: 'center', color: theme.textSecondary }}>The Offer Editor is optimized for desktop browsers. Please use the Web Portal for full document editing and preview.</Text>
-               <Button label="Close" onPress={() => setShowOfferForm(false)} style={{ marginTop: 20, width: '100%' }} />
+            <ScrollView contentContainerStyle={styles.modalBody}>
+              <Text style={styles.label}>Candidate Name</Text>
+              <TextInput style={[styles.input, { borderColor: theme.border }]} value={offerFormData.name} onChangeText={t => setOfferFormData({...offerFormData, name: t})} />
+              
+              <Text style={styles.label}>Location</Text>
+              <TextInput style={[styles.input, { borderColor: theme.border }]} value={offerFormData.location} onChangeText={t => setOfferFormData({...offerFormData, location: t})} />
+
+              <Text style={styles.label}>Role</Text>
+              <TextInput style={[styles.input, { borderColor: theme.border }]} value={offerFormData.role} onChangeText={t => setOfferFormData({...offerFormData, role: t})} />
+
+              <Text style={styles.label}>Total Salary</Text>
+              <TextInput style={[styles.input, { borderColor: theme.border }]} value={offerFormData.salary} keyboardType="numeric" onChangeText={t => setOfferFormData({...offerFormData, salary: t})} />
+
+              <Text style={styles.label}>Fixed Salary</Text>
+              <TextInput style={[styles.input, { borderColor: theme.border }]} value={offerFormData.fixedSalary} keyboardType="numeric" onChangeText={t => setOfferFormData({...offerFormData, fixedSalary: t})} />
+
+              <Text style={styles.label}>Variable Salary</Text>
+              <TextInput style={[styles.input, { borderColor: theme.border }]} value={offerFormData.variableSalary} keyboardType="numeric" onChangeText={t => setOfferFormData({...offerFormData, variableSalary: t})} />
+
+              <Text style={styles.label}>Variable Type</Text>
+              <View style={styles.pickerContainer}>
+                <TouchableOpacity style={[styles.emailPill, offerFormData.variableType === 'Year End Bonus' && { backgroundColor: theme.primary, borderColor: theme.primary }]} onPress={() => setOfferFormData({...offerFormData, variableType: 'Year End Bonus'})}>
+                  <Text style={[styles.emailPillText, offerFormData.variableType === 'Year End Bonus' && { color: '#fff' }]}>Year End</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.emailPill, offerFormData.variableType === 'Quarterly Bonus' && { backgroundColor: theme.primary, borderColor: theme.primary }]} onPress={() => setOfferFormData({...offerFormData, variableType: 'Quarterly Bonus'})}>
+                  <Text style={[styles.emailPillText, offerFormData.variableType === 'Quarterly Bonus' && { color: '#fff' }]}>Quarterly</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.emailPill, offerFormData.variableType === 'Joining Bonus' && { backgroundColor: theme.primary, borderColor: theme.primary }]} onPress={() => setOfferFormData({...offerFormData, variableType: 'Joining Bonus'})}>
+                  <Text style={[styles.emailPillText, offerFormData.variableType === 'Joining Bonus' && { color: '#fff' }]}>Joining</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.emailPill, offerFormData.variableType === 'NA' && { backgroundColor: theme.primary, borderColor: theme.primary }]} onPress={() => setOfferFormData({...offerFormData, variableType: 'NA'})}>
+                  <Text style={[styles.emailPillText, offerFormData.variableType === 'NA' && { color: '#fff' }]}>NA</Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.label}>Joining Date</Text>
+              <TextInput style={[styles.input, { borderColor: theme.border }]} value={offerFormData.date} placeholder="YYYY-MM-DD" onChangeText={t => setOfferFormData({...offerFormData, date: t})} />
+
+              <Text style={styles.label}>Experience Level</Text>
+              <View style={styles.pickerContainer}>
+                <TouchableOpacity style={[styles.emailPill, offerFormData.experience === 'fresher' && { backgroundColor: theme.primary, borderColor: theme.primary }]} onPress={() => setOfferFormData({...offerFormData, experience: 'fresher'})}>
+                  <Text style={[styles.emailPillText, offerFormData.experience === 'fresher' && { color: '#fff' }]}>Fresher</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.emailPill, offerFormData.experience === 'experienced' && { backgroundColor: theme.primary, borderColor: theme.primary }]} onPress={() => setOfferFormData({...offerFormData, experience: 'experienced'})}>
+                  <Text style={[styles.emailPillText, offerFormData.experience === 'experienced' && { color: '#fff' }]}>Experienced</Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.label}>Template Type</Text>
+              <View style={styles.pickerContainer}>
+                <TouchableOpacity style={[styles.emailPill, offerFormData.templateType === 'col' && { backgroundColor: theme.primary, borderColor: theme.primary }]} onPress={() => setOfferFormData({...offerFormData, templateType: 'col'})}>
+                  <Text style={[styles.emailPillText, offerFormData.templateType === 'col' && { color: '#fff' }]}>Conditional (COL)</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.emailPill, offerFormData.templateType === 'fol' && { backgroundColor: theme.primary, borderColor: theme.primary }]} onPress={() => setOfferFormData({...offerFormData, templateType: 'fol'})}>
+                  <Text style={[styles.emailPillText, offerFormData.templateType === 'fol' && { color: '#fff' }]}>Formal (FOL)</Text>
+                </TouchableOpacity>
+              </View>
+
+              <Button label={generatingOffer ? "Generating..." : "Generate HTML Preview"} onPress={handleGenerateOffer} loading={generatingOffer} style={{ marginTop: 10 }} />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* OFFER ACTION MODAL */}
+      <Modal visible={showOfferActionModal} animationType="slide" transparent>
+        <View style={[styles.modalOverlay, { backgroundColor: theme.background }]}>
+          <View style={{ flex: 1, backgroundColor: theme.background, paddingTop: 40 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, backgroundColor: theme.surface, borderBottomWidth: 1, borderColor: theme.border }}>
+              <Text style={styles.modalTitle}>Offer Preview</Text>
+              <TouchableOpacity onPress={() => setShowOfferActionModal(false)}>
+                <X color={theme.text} size={24} />
+              </TouchableOpacity>
             </View>
+
+            {/* The actual HTML preview matching the exact CSS requested */}
+            <View style={{ flex: 1 }}>
+               <WebView 
+                 originWhitelist={['*']}
+                 source={{ html: generatedHtml }}
+                 style={{ flex: 1 }}
+                 onMessage={handleWebViewMessage}
+                 javaScriptEnabled={true}
+                 domStorageEnabled={true}
+                 scalesPageToFit={true}
+                 showsHorizontalScrollIndicator={false}
+               />
+            </View>
+            
+            {/* Loading Overlay */}
+            {generatingOffer && (
+              <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(255,255,255,0.7)', justifyContent: 'center', alignItems: 'center' }}>
+                 <ActivityIndicator size="large" color={theme.primary} />
+                 <Text style={{ marginTop: 10, fontWeight: 'bold' }}>Sending Offer...</Text>
+              </View>
+            )}
           </View>
         </View>
       </Modal>

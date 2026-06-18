@@ -20,7 +20,6 @@ import jobRoutes from "./routes/jobRoutes.js";
 import workflowEmailRoutes from "./routes/workflowEmailRoutes.js";
 import generatePdfRoutes from "./routes/generatePdf.js";
 import chatbotRoutes from "./routes/chatbot.js";
-import offerLetterRoutes from "./routes/offerLetter.js";
 /* ================= BASIC SETUP ================= */
 
 dotenv.config();
