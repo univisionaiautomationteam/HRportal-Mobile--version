@@ -1,7 +1,7 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useEffect, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, Modal, TextInput, ScrollView, StatusBar, Platform } from 'react-native';
-import { WebView } from 'react-native-webview';
+//import { WebView } from 'react-native-webview';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { SIZES, TYPOGRAPHY } from '../constants/theme';
@@ -681,7 +681,7 @@ document.getElementById("approveBtn").addEventListener("click", () => {
 
             {/* The actual HTML preview matching the exact CSS requested */}
             <View style={{ flex: 1 }}>
-               <WebView 
+              {/*} <WebView 
                  originWhitelist={['*']}
                  source={{ html: generatedHtml }}
                  style={{ flex: 1 }}
@@ -691,6 +691,7 @@ document.getElementById("approveBtn").addEventListener("click", () => {
                  scalesPageToFit={true}
                  showsHorizontalScrollIndicator={false}
                />
+               */}
             </View>
             
             {/* Loading Overlay */}

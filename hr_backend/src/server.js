@@ -164,6 +164,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/workflow-emails", workflowEmailRoutes);
+app.use("/api/chatbot", chatbotRoutes);
 app.use("/api", generatePdfRoutes);
 /* ================= HEALTH CHECK ================= */
 
