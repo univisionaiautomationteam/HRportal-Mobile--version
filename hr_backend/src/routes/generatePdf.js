@@ -174,35 +174,28 @@ res.json({ html });
 });
 
 
-router.post(
-  "/download-pdf",
-  async (req, res) => {
-
+router.post("/download-pdf", async (req, res) => {
   try {
-
     const { html } = req.body;
+    const outputDir = path.resolve(process.cwd(), "output");
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
 
-    const filePath =
-      "output/offer.pdf";
+    const filename = `offer-${Date.now()}.pdf`;
+    const filePath = path.join(outputDir, filename);
 
-    await generatePDF(
-      html,
-      filePath
-    );
+    await generatePDF(html, filePath);
 
-    res.sendFile(
-  path.resolve(filePath)
-);
+    const protocol = req.get("x-forwarded-proto") || req.protocol;
+    const host = req.get("host");
+    const pdfUrl = `${protocol}://${host}/pdfs/${filename}`;
 
+    res.json({ pdfUrl });
   } catch (err) {
-
     console.log(err);
-
-    res.status(500)
-      .send("Failed");
-
+    res.status(500).json({ error: "Failed to generate PDF" });
   }
-
 });
 
 

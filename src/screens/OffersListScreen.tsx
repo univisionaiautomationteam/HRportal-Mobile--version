@@ -1,10 +1,11 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useEffect, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, Modal, TextInput, ScrollView, StatusBar, Platform } from 'react-native';
-//import { WebView } from 'react-native-webview';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, Modal, TextInput, ScrollView, StatusBar, Platform, Linking } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { SIZES, TYPOGRAPHY } from '../constants/theme';
+import { API_BASE_URL } from '../constants/config';
 import { offersAPI } from '../services/apiService';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -180,13 +181,16 @@ HR Team`,
   const handleGenerateOffer = async () => {
     try {
       setGeneratingOffer(true);
-      const res = await fetch("http://10.60.102.146:5000/api/generate", {
+      const res = await fetch(`${API_BASE_URL}/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(offerFormData)
       });
       if (res.ok) {
         const data = await res.json();
+        console.log('GENERATE RESPONSE:', data);
+        console.log('HTML LENGTH:', data?.html?.length);
+        console.log('HTML SAMPLE:', data?.html?.substring(0, 300));
         // Construct the EXACT preview wrapper the user requested
         const previewWrapperHtml = `
 <!DOCTYPE html>
@@ -253,7 +257,7 @@ document.getElementById("approveBtn").addEventListener("click", () => {
       const data = JSON.parse(event.nativeEvent.data);
       if (data.action === 'SEND') {
         setGeneratingOffer(true);
-        const res = await fetch("http://10.60.102.146:5000/api/send-mail", {
+        const res = await fetch(`${API_BASE_URL}/send-mail`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ html: data.html, email: data.email })
@@ -266,7 +270,46 @@ document.getElementById("approveBtn").addEventListener("click", () => {
         }
         setGeneratingOffer(false);
       } else if (data.action === 'DOWNLOAD') {
-        Alert.alert("Notice", "PDF Download requested! (Note: React Native requires additional modules like rn-fetch-blob to save files directly to the device. Please use the web portal for direct PDF downloading.)");
+        try {
+          setGeneratingOffer(true);
+
+          const res = await fetch(`${API_BASE_URL}/download-pdf`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ html: data.html })
+          });
+
+          if (!res.ok) {
+            console.error('Download PDF failed', res.status);
+            Alert.alert('Error', 'Failed to download PDF');
+            setGeneratingOffer(false);
+            return;
+          }
+
+          const payload = await res.json();
+          const pdfUrl = payload?.pdfUrl;
+          if (!pdfUrl) {
+            console.error('PDF URL missing', payload);
+            Alert.alert('Error', 'Failed to download PDF');
+            setGeneratingOffer(false);
+            return;
+          }
+
+          Alert.alert('Success', 'PDF is ready. Opening now...');
+
+          const canOpen = await Linking.canOpenURL(pdfUrl);
+          if (canOpen) {
+            await Linking.openURL(pdfUrl);
+          } else {
+            Alert.alert('Error', 'Cannot open PDF URL on this device.');
+          }
+
+          setGeneratingOffer(false);
+        } catch (err) {
+          console.error('Download error:', err);
+          Alert.alert('Error', 'Failed to download PDF');
+          setGeneratingOffer(false);
+        }
       }
     } catch (err) {
       console.error(err);
@@ -681,7 +724,7 @@ document.getElementById("approveBtn").addEventListener("click", () => {
 
             {/* The actual HTML preview matching the exact CSS requested */}
             <View style={{ flex: 1 }}>
-              {/*} <WebView 
+               <WebView 
                  originWhitelist={['*']}
                  source={{ html: generatedHtml }}
                  style={{ flex: 1 }}
@@ -691,7 +734,6 @@ document.getElementById("approveBtn").addEventListener("click", () => {
                  scalesPageToFit={true}
                  showsHorizontalScrollIndicator={false}
                />
-               */}
             </View>
             
             {/* Loading Overlay */}
