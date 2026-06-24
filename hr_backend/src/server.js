@@ -149,6 +149,11 @@ app.use(
   express.static(path.join(process.cwd(), "uploads"))
 );
 
+// Serve generated PDFs from output directory
+app.use(
+  "/pdfs",
+  express.static(path.join(process.cwd(), "output"))
+);
 
 /* ================= ROUTES ================= */
 
