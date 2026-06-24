@@ -22,6 +22,17 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>msal4c0096ef-ee28-4a18-9cd8-4b6d57324296</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>msal4c0096ef-ee28-4a18-9cd8-4b6d57324296</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>

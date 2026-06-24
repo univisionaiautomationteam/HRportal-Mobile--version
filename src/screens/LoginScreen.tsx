@@ -1,5 +1,5 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator, StatusBar, Linking } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -8,7 +8,7 @@ import { authAPI } from '../services/apiService';
 import Button from '../components/Button';
 import { InAppBrowser } from 'react-native-inappbrowser-reborn';
 import { authorize } from 'react-native-app-auth';
-import { msalConfig, mobileRedirectUri, googleConfig } from '../constants/msalConfig';
+import { discovery, msalConfig, mobileRedirectUri, googleConfig } from '../constants/msalConfig';
 import { Lock, Target } from 'lucide-react-native';
 
 export const LoginScreen = ({ navigation }: any) => {
@@ -40,15 +40,38 @@ export const LoginScreen = ({ navigation }: any) => {
   };
 
   const handleMicrosoftLogin = async () => {
-  await login(
-    'dummy-token',
-    {
-      id: '1',
-      name: 'Test User',
-      email: 'test@test.com',
-    } as any
-  );
-};
+    if (loading) return;
+    setLoading(true);
+    setErrorMessage('');
+
+    try {
+      const authState = await authorize({
+        clientId: msalConfig.clientId,
+        redirectUrl: mobileRedirectUri,
+        scopes: msalConfig.scopes,
+        serviceConfiguration: discovery,
+        additionalParameters: {
+          prompt: 'select_account',
+        },
+      });
+
+      if (!authState.accessToken) {
+        throw new Error('Microsoft access token missing');
+      }
+
+      await handleBackendLogin(authState.accessToken);
+    } catch (err: any) {
+      console.error("Microsoft Login Error:", err);
+
+      if (err?.message?.includes('User cancelled')) {
+        return;
+      }
+
+      setErrorMessage('Microsoft login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleGoogleLogin = async () => {
     if (loading) return;

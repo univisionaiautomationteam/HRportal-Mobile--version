@@ -85,7 +85,8 @@ android {
         versionCode 1
         versionName "1.0"
         manifestPlaceholders = [
-            appAuthRedirectScheme: "com.hrportalmobile"
+            appAuthRedirectScheme: "msal4c0096ef-ee28-4a18-9cd8-4b6d57324296",
+            usesCleartextTraffic: "true"
         ]
     }
     signingConfigs {

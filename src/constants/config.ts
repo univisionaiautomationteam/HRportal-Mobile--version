@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 
 // For Android emulators, 10.0.2.2 points to host machine loopback (localhost).
 // For iOS emulators or real devices, you MUST use your computer's LAN IP address.
-export const LOCAL_HOST_IP = '172.16.32.126';
+export const LOCAL_HOST_IP = '192.168.1.10';
 
 export const API_BASE_URL = Platform.select({
   android: `http://${LOCAL_HOST_IP}:5000/api`,

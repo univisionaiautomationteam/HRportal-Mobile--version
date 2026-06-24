@@ -1,6 +1,9 @@
-import pdfParse from 'pdf-parse';
 import mammoth from 'mammoth';
 import { fileTypeFromBuffer } from 'file-type';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const pdfParse = require('pdf-parse');
 
 async function extractResumeText(buffer) {
   const type = await fileTypeFromBuffer(buffer);
