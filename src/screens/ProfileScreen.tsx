@@ -135,7 +135,7 @@ export const ProfileScreen = () => {
                     <View style={[styles.badge, { backgroundColor: theme.primary + '12' }]}>
                         <Text style={[styles.badgeText, { color: theme.primary }]}>{user?.role || 'HR Specialist'}</Text>
                     </View>
-                    <Text style={[styles.email, { color: theme.textSecondary }]}>{'hr@univision.com'}</Text>
+                    <Text style={[styles.email, { color: theme.textSecondary }]}>{user?.email || 'No Email'}</Text>
                 </View>
 
                 <Card title="Preferences">

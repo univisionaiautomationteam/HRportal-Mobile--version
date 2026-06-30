@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { safeDecode } from '../utils';
 
 interface AuthContextType {
-  user: { name: string; role: string } | null;
+  user: { name: string; role: string; email: string } | null;
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -14,7 +14,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<{ name: string; role: string } | null>(null);
+  const [user, setUser] = useState<{ name: string; role: string; email: string } | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -34,10 +34,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUser({
               name: parsed.full_name || parsed.name || parsed.username || 'User',
               role: parsed.role || 'HR',
+              email: parsed.email || 'No Email',
             });
           } else {
-            const decoded = safeDecode(storedToken);
-            setUser(decoded);
+            const decoded: any = safeDecode(storedToken);
+            setUser({
+            name: decoded?.name || 'User',
+            role: decoded?.role || 'HR',
+            email: decoded?.email || 'No Email',
+  });
           }
         }
       } catch (e) {
@@ -62,6 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser({
         name: displayName,
         role: userData.role || 'HR',
+        email: userData.email || 'No Email',
       });
     } catch (e) {
       console.error('Error saving session details in AsyncStorage', e);

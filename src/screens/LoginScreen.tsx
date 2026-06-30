@@ -5,10 +5,8 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { SIZES } from '../constants/theme';
 import { authAPI } from '../services/apiService';
-import Button from '../components/Button';
-import { InAppBrowser } from 'react-native-inappbrowser-reborn';
 import { authorize } from 'react-native-app-auth';
-import { discovery, msalConfig, mobileRedirectUri, googleConfig } from '../constants/msalConfig';
+import { discovery, msalConfig, mobileRedirectUri } from '../constants/msalConfig';
 import { Lock, Target } from 'lucide-react-native';
 
 export const LoginScreen = ({ navigation }: any) => {
@@ -73,94 +71,6 @@ export const LoginScreen = ({ navigation }: any) => {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    if (loading) return;
-    setLoading(true);
-    setErrorMessage('');
-
-    try {
-      const redirectUri = mobileRedirectUri;
-      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-        `client_id=${googleConfig.clientId}` +
-        `&response_type=id_token` +
-        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-        `&scope=openid%20profile%20email` +
-        `&nonce=random_nonce` +
-        `&prompt=select_account`;
-
-      if (await InAppBrowser.isAvailable()) {
-        const result = await InAppBrowser.openAuth(authUrl, redirectUri, {
-          // iOS Properties
-          dismissButtonStyle: 'cancel',
-          preferredBarTintColor: '#453AA4',
-          preferredControlTintColor: 'white',
-          readerMode: false,
-          animated: true,
-          modalPresentationStyle: 'fullScreen',
-          modalTransitionStyle: 'coverVertical',
-          modalEnabled: true,
-          enableBarCollapsing: false,
-          // Android Properties
-          showTitle: true,
-          toolbarColor: '#6200EE',
-          secondaryToolbarColor: 'black',
-          navigationBarColor: 'black',
-          navigationBarDividerColor: 'white',
-          enableUrlBarHiding: true,
-          enableDefaultShare: true,
-          forceCloseOnRedirection: false,
-          // Animations
-          animations: {
-            startEnter: 'slide_in_right',
-            startExit: 'slide_out_left',
-            endEnter: 'slide_in_left',
-            endExit: 'slide_out_right'
-          }
-        });
-
-        if (result.type === 'success' && result.url) {
-          const url = result.url;
-          let idToken = '';
-
-          if (url.includes('id_token=')) {
-            idToken = url.split('id_token=')[1].split('&')[0];
-          }
-
-          if (!idToken) throw new Error('ID Token missing from Google response');
-
-          console.log("TOKEN RECEIVED =", idToken);
-
-          const response = await authAPI.googleLogin(idToken);
-          console.log("BACKEND RESPONSE =", response.data);
-
-          if (response.data.setup2FA) {
-            navigation.navigate('Setup2FA', {
-              userId: response.data.userId,
-              qrCode: response.data.qrCode,
-              manualKey: response.data.manualKey,
-            });
-            return;
-          }
-
-          if (response.data.requireOTP) {
-            navigation.navigate('OTP', { userId: response.data.userId });
-            return;
-          }
-
-          if (response.data.token && response.data.user) {
-            await login(response.data.token, response.data.user);
-          }
-        }
-      } else {
-        Linking.openURL(authUrl);
-      }
-    } catch (err: any) {
-      console.error("Google Login Error:", err);
-      setErrorMessage('Google login failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: '#0F172A' }]}>
@@ -226,13 +136,7 @@ export const LoginScreen = ({ navigation }: any) => {
               )}
             </TouchableOpacity>
 
-            <Button
-              label="Sign in with Google"
-              variant="outline"
-              onPress={handleGoogleLogin}
-              loading={loading}
-              style={styles.actionBtn}
-            />
+            
 
             <View style={[styles.divider, { backgroundColor: 'rgba(255, 255, 255, 0.1)' }]} />
 
