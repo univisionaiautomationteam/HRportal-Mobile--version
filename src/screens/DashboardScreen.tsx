@@ -280,7 +280,7 @@ export const DashboardScreen = ({ navigation }: any) => {
 
         <QuickActions
           onAddCandidate={() => navigation.navigate('CandidatesTab', { screen: 'CandidatesList' })}
-          onScheduleInterview={() => navigation.navigate('AI')}
+          onScheduleInterview={() => navigation.navigate('InterviewsList')}
           onAIAssistant={() => navigation.navigate('AI')}
         />
 

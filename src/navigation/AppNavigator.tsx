@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import InterviewsListScreen from '../screens/InterviewsListScreen';
 import { SIZES, TYPOGRAPHY } from '../constants/theme';
 import {
   Home,
@@ -43,6 +44,7 @@ export type AuthStackParamList = {
   StartInterview: undefined;
   CandidateInterview: { sessionId: string };
   AppTabs: undefined;
+  InterviewsList: undefined;
 };
 
 export type CandidateStackParamList = {
@@ -233,8 +235,28 @@ export const AppNavigator = () => {
   return (
     <AuthStack.Navigator screenOptions={{ headerShown: false }}>
       {isAuthenticated ? (
-        <AuthStack.Screen name="AppTabs" component={AuthenticatedWrapper} />
-      ) : (
+  <>
+    <AuthStack.Screen
+      name="AppTabs"
+      component={AuthenticatedWrapper}
+    />
+
+    <AuthStack.Screen
+     name="InterviewsList"
+     component={InterviewsListScreen}
+     />
+
+    <AuthStack.Screen
+      name="StartInterview"
+      component={StartInterviewScreen}
+    />
+
+    <AuthStack.Screen
+      name="CandidateInterview"
+      component={CandidateInterviewScreen}
+    />
+  </>
+) : (
         <>
           <AuthStack.Screen name="Login" component={LoginScreen} />
           <AuthStack.Screen name="Setup2FA" component={Setup2FAScreen} />
