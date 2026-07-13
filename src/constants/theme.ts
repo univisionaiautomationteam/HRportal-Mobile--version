@@ -1,3 +1,5 @@
+import { moderateScale } from '../utils/responsive';
+
 export const COLORS = {
   light: {
     primary: '#2f7df6',
@@ -38,28 +40,28 @@ export const COLORS = {
 };
 
 export const SIZES = {
-  xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  xxl: 24,
-  radiusSm: 6,
-  radiusMd: 12,
-  radiusLg: 16,
+  xs: moderateScale(4),
+  sm: moderateScale(8),
+  md: moderateScale(12),
+  lg: moderateScale(16),
+  xl: moderateScale(20),
+  xxl: moderateScale(24),
+  radiusSm: moderateScale(6),
+  radiusMd: moderateScale(12),
+  radiusLg: moderateScale(16),
   radiusRound: 9999,
 };
 
 export const TYPOGRAPHY = {
-  h1: { fontSize: 24, fontWeight: '700' as const, lineHeight: 32, fontFamily: 'Times New Roman' },
-  h2: { fontSize: 20, fontWeight: '700' as const, lineHeight: 28, fontFamily: 'Times New Roman' },
-  h3: { fontSize: 16, fontWeight: '600' as const, lineHeight: 24, fontFamily: 'Times New Roman' },
-  bodyLarge: { fontSize: 16, fontWeight: '400' as const, lineHeight: 24, fontFamily: 'Times New Roman' },
-  body: { fontSize: 14, fontWeight: '400' as const, lineHeight: 20, fontFamily: 'Times New Roman' },
-  bodyMedium: { fontSize: 14, fontWeight: '500' as const, lineHeight: 20, fontFamily: 'Times New Roman' },
-  caption: { fontSize: 12, fontWeight: '400' as const, lineHeight: 16, fontFamily: 'Times New Roman' },
-  captionBold: { fontSize: 12, fontWeight: '600' as const, lineHeight: 16, fontFamily: 'Times New Roman' },
-  button: { fontSize: 14, fontWeight: '600' as const, lineHeight: 20, fontFamily: 'Times New Roman' },
+  h1: { fontSize: moderateScale(24), fontWeight: '700' as const, lineHeight: moderateScale(32), fontFamily: 'Times New Roman' },
+  h2: { fontSize: moderateScale(20), fontWeight: '700' as const, lineHeight: moderateScale(28), fontFamily: 'Times New Roman' },
+  h3: { fontSize: moderateScale(16), fontWeight: '600' as const, lineHeight: moderateScale(24), fontFamily: 'Times New Roman' },
+  bodyLarge: { fontSize: moderateScale(16), fontWeight: '400' as const, lineHeight: moderateScale(24), fontFamily: 'Times New Roman' },
+  body: { fontSize: moderateScale(14), fontWeight: '400' as const, lineHeight: moderateScale(20), fontFamily: 'Times New Roman' },
+  bodyMedium: { fontSize: moderateScale(14), fontWeight: '500' as const, lineHeight: moderateScale(20), fontFamily: 'Times New Roman' },
+  caption: { fontSize: moderateScale(12), fontWeight: '400' as const, lineHeight: moderateScale(16), fontFamily: 'Times New Roman' },
+  captionBold: { fontSize: moderateScale(12), fontWeight: '600' as const, lineHeight: moderateScale(16), fontFamily: 'Times New Roman' },
+  button: { fontSize: moderateScale(14), fontWeight: '600' as const, lineHeight: moderateScale(20), fontFamily: 'Times New Roman' },
 };
 
 export type ThemeType = typeof COLORS.light;

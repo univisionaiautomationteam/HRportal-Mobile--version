@@ -1,5 +1,6 @@
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useEffect, useState, useMemo } from 'react';
+import { verticalScale, moderateScale } from '../utils/responsive';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -260,7 +261,7 @@ export const DashboardScreen = ({ navigation }: any) => {
     <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + verticalScale(100) }]}
         showsVerticalScrollIndicator={true}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.primary} />}
       >
@@ -285,7 +286,7 @@ export const DashboardScreen = ({ navigation }: any) => {
         />
 
         <Card title="Application Overview">
-          <View style={{ height: 180 }}>
+          <View style={{ height: verticalScale(180) }}>
             <DonutChart total={dashboard.applicationTotal} items={dashboard.applicationOverview} />
           </View>
         </Card>
@@ -323,12 +324,12 @@ const styles = StyleSheet.create({
   },
   title: {
     ...TYPOGRAPHY.h1,
-    fontSize: 32,
+    fontSize: moderateScale(32),
     fontFamily: 'Times New Roman',
   },
   subtitle: {
     ...TYPOGRAPHY.body,
-    marginTop: 4,
+    marginTop: verticalScale(4),
     color: '#64748B',
     fontFamily: 'Times New Roman',
   },

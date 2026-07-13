@@ -1,5 +1,6 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useEffect, useState, useMemo } from 'react';
+import { verticalScale, moderateScale } from '../utils/responsive';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, Modal, TextInput, ScrollView, StatusBar, Platform, Linking } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useTheme } from '../context/ThemeContext';
@@ -774,30 +775,30 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    padding: 20,
+    padding: moderateScale(20),
   },
   pageTitle: {
-    fontSize: 24,
+    fontSize: moderateScale(24),
     fontWeight: '700',
     fontFamily: 'Times New Roman',
   },
   pageSubtitle: {
-    fontSize: 12,
+    fontSize: moderateScale(12),
     fontFamily: 'Times New Roman',
-    marginTop: 4,
+    marginTop: verticalScale(4),
     fontWeight: '600',
   },
   manageBtn: {
     backgroundColor: '#16a34a',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-    marginTop: 12,
+    paddingHorizontal: moderateScale(12),
+    paddingVertical: verticalScale(8),
+    borderRadius: moderateScale(6),
+    marginTop: verticalScale(12),
     alignSelf: 'flex-start',
   },
   manageBtnText: {
     color: '#fff',
-    fontSize: 12,
+    fontSize: moderateScale(12),
     fontWeight: '600',
   },
   tabs: {
